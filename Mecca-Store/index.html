@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="img/Logo1.png" type="image/x-icon">
+    <title>Mecca Store</title>
+</head>
+
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <a href="#">Mecca Store <br>مكة ستور</a>
+                <a href="https://www.facebook.com/"><img src="img/Logo1.png" alt="logo" class="icon"></a>
+            </div>
+            <ul class="links">
+                <li><a href="#hero">الرئيسية</a></li>
+                <li><a href="#products">المنتجات</a></li>
+                <li><a href="#about">من نحن</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a href="#" class="action-btn "> Get Started</a>
+            <div class="toglle-btn">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+
+        <div class="dropdown_menu">
+            <li><a class="subdr" href="#hero">الرئيسية</a></li>
+            <li><a class="subdr" href="#products">المنتجات</a></li>
+            <li><a class="subdr" href="#about">عن مكة ستور</a></li>
+            <li><a class="subdr" href="contact">Contact</a></li>
+            <li> <a class="subdr" href="#" class="action-btn"> Get Started</a></li>
+        </div>
+    </header>
+
+    <main class="main">
+        <section id="hero">
+            <h1>أفضل مستلزمات طبية في متجر مكة</h1>
+            <p>كل ما تحتاجه لصحتك في مكان واحد.</p>
+        </section>
+
+        <section id="products" class="products">
+            <h2>منتجاتنا</h2>
+
+            <div class="container" id="productsContainer">
+                <!-- المنتجات ستضاف هنا من Firebase -->
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <h2>عن الموقع</h2>
+            <p>مكة ستور هو متجر إلكتروني متخصص في بيع المستلزمات الطبية بجودة عالية وأسعار تنافسية. هدفنا هو تلبية
+                احتياجاتكم الصحية بكل راحة وأمان.</p>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBePldY0nW-2uJmX-eXYAawKGyMwnrYDGI",
+            authDomain: "mecca2035.firebaseapp.com",
+            projectId: "mecca2035",
+            storageBucket: "mecca2035.firebasestorage.app",
+            messagingSenderId: "642843623501",
+            appId: "1:642843623501:web:28ea404414772d6ed55c04",
+            measurementId: "G-SES4Z8W3F6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const container = document.getElementById("productsContainer");
+
+        async function renderProducts() {
+            container.innerHTML = "جارٍ تحميل المنتجات...";
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                container.innerHTML = "";
+                querySnapshot.forEach((doc) => {
+                    const product = doc.data();
+                    const productDiv = document.createElement("div");
+                    productDiv.classList.add("product-item");
+                    productDiv.innerHTML = `
+                        <img src="${product.image}" alt="${product.name}">
+                        <h3>${product.name}</h3>
+                        <p>${product.description}</p>
+                    `;
+                    container.appendChild(productDiv);
+                });
+            } catch (error) {
+                container.innerHTML = "حدث خطأ أثناء تحميل المنتجات.";
+                console.error(error);
+            }
+        }
+
+        renderProducts();
+
+        // كود القائمة المنسدلة
+        const toglleBtn = document.querySelector('.toglle-btn');
+        const toglleBtnIcon = document.querySelector('.toglle-btn i');
+        const dropDown_menu = document.querySelector('.dropdown_menu');
+
+        toglleBtn.onclick = function () {
+            dropDown_menu.classList.toggle('open');
+            const isOpen = dropDown_menu.classList.contains('open');
+            toglleBtnIcon.classList = isOpen
+                ? 'fa-solid fa-xmark'
+                : 'fa-solid fa-bars';
+        };
+    </script>
+</body>
+
+</html>
