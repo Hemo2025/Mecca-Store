@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم مكة ستور - تسجيل دخول</title>
+    <style>
+        body {
+            font-family: "Cairo", Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0 10px;
+        }
+
+        header {
+            background: #3b82f6;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #loginForm,
+        #adminPanel {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        textarea,
+        button {
+            width: 100%;
+            margin: 12px 0;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        button {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        .logout-btn {
+            background-color: #ef4444;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn:hover {
+            background-color: #dc2626;
+        }
+
+        .product-item {
+            background: #f9fafb;
+            padding: 15px;
+            border: 1px solid #e5e7eb;
+            margin: 15px 0;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .product-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            font-weight: bold;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+        }
+
+        /* زر رفع صورة مخصص */
+        #productImage {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        #customUploadBtn {
+            background-color: #10b981;
+            color: white;
+            font-weight: bold;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            transition: background-color 0.3s ease;
+        }
+
+        #customUploadBtn:hover {
+            background-color: #059669;
+        }
+
+        #fileName {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            margin-top: 5px;
+            min-height: 18px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header>لوحة تحكم مكة ستور</header>
+
+    <!-- نموذج تسجيل الدخول -->
+    <div id="loginForm">
+        <h3>تسجيل دخول المسؤول</h3>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" autocomplete="username" />
+        <input type="password" id="password" placeholder="كلمة المرور" autocomplete="current-password" />
+        <button onclick="login()">دخول</button>
+    </div>
+
+    <!-- لوحة التحكم -->
+    <div id="adminPanel" style="display:none;">
+        <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+
+        <h3>إضافة منتج جديد:</h3>
+        <input type="text" id="productName" placeholder="اسم المنتج" />
+        <textarea id="productDescription" placeholder="وصف المنتج"></textarea>
+
+        <input type="file" id="productImage" accept="image/*" />
+        <button id="customUploadBtn" type="button">اختر صورة المنتج</button>
+        <span id="fileName">لم يتم اختيار صورة</span>
+
+        <button onclick="addProduct()">إضافة المنتج</button>
+
+        <h3>المنتجات:</h3>
+        <div id="productsList">جارٍ تحميل المنتجات...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBePldY0nW-2uJmX-eXYAawKGyMwnrYDGI",
+            authDomain: "mecca2035.firebaseapp.com",
+            projectId: "mecca2035",
+            storageBucket: "mecca2035.firebasestorage.app",
+            messagingSenderId: "642843623501",
+            appId: "1:642843623501:web:28ea404414772d6ed55c04",
+            measurementId: "G-SES4Z8W3F6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        const loginForm = document.getElementById("loginForm");
+        const adminPanel = document.getElementById("adminPanel");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const productsList = document.getElementById("productsList");
+        const imageInput = document.getElementById("productImage");
+        const customUploadBtn = document.getElementById("customUploadBtn");
+        const fileNameDisplay = document.getElementById("fileName");
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        // زر رفع صورة مخصص
+        customUploadBtn.addEventListener("click", () => {
+            imageInput.click();
+        });
+        imageInput.addEventListener("change", () => {
+            fileNameDisplay.textContent = imageInput.files[0] ? imageInput.files[0].name : "لم يتم اختيار صورة";
+        });
+
+        // دالة لتحويل الصورة الى Base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // دالة تسجيل الدخول
+        function login() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            if (!email || !password) {
+                alert("يرجى تعبئة البريد الإلكتروني وكلمة المرور");
+                return;
+            }
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    alert("تم تسجيل الدخول بنجاح");
+                    emailInput.value = "";
+                    passwordInput.value = "";
+                })
+                .catch(error => {
+                    alert("فشل تسجيل الدخول: " + error.message);
+                });
+        }
+        window.login = login;
+
+
+        // دالة تسجيل الخروج
+        logoutBtn.addEventListener("click", () => {
+            signOut(auth).then(() => {
+                alert("تم تسجيل الخروج");
+            });
+        });
+
+        // مراقبة حالة تسجيل الدخول
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                loginForm.style.display = "none";
+                adminPanel.style.display = "block";
+                renderProducts();
+            } else {
+                loginForm.style.display = "block";
+                adminPanel.style.display = "none";
+                productsList.innerHTML = "";
+            }
+        });
+
+        // عرض المنتجات
+        async function renderProducts() {
+            productsList.innerHTML = "جارٍ تحميل المنتجات...";
+            const querySnapshot = await getDocs(collection(db, "products"));
+            productsList.innerHTML = "";
+            querySnapshot.forEach(docSnap => {
+                const product = docSnap.data();
+                const productId = docSnap.id;
+
+                const div = document.createElement("div");
+                div.className = "product-item";
+                div.innerHTML = `
+          <img src="${product.image}" alt="${product.name}" />
+          <h4>${product.name}</h4>
+          <p>${product.description}</p>
+          <button class="delete-btn" onclick="deleteProduct('${productId}')">حذف المنتج</button>
+        `;
+                productsList.appendChild(div);
+            });
+        }
+
+        // إضافة منتج جديد
+        async function addProduct() {
+            const name = document.getElementById("productName").value.trim();
+            const description = document.getElementById("productDescription").value.trim();
+            const file = imageInput.files[0];
+
+            if (!name || !description || !file) {
+                alert("يرجى تعبئة كل الحقول واختيار صورة.");
+                return;
+            }
+
+            const imageBase64 = await getBase64(file);
+
+            await addDoc(collection(db, "products"), {
+                name,
+                description,
+                image: imageBase64,
+            });
+
+            alert("تمت إضافة المنتج.");
+            document.getElementById("productName").value = "";
+            document.getElementById("productDescription").value = "";
+            imageInput.value = "";
+            fileNameDisplay.textContent = "لم يتم اختيار صورة";
+
+            renderProducts();
+        }
+
+        window.addProduct = addProduct;
+
+        // حذف المنتج
+        window.deleteProduct = async function (productId) {
+            if (confirm("هل تريد حذف هذا المنتج؟")) {
+                await deleteDoc(doc(db, "products", productId));
+                alert("تم حذف المنتج.");
+                renderProducts();
+            }
+        };
+    </script>
+</body>
+
+</html>
